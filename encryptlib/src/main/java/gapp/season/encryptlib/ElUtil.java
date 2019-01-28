@@ -100,4 +100,16 @@ public class ElUtil {
         }
         return false;
     }
+
+    public static boolean isNumStr(String str) {
+        if (!TextUtils.isEmpty(str)) {
+            for (char c : str.toCharArray()) {
+                if (c < '0' || c > '9') {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
 }

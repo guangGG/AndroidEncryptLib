@@ -1,4 +1,4 @@
-package gapp.season.encryptlib;
+package gapp.season.encryptlib.code;
 
 import android.util.Base64;
 

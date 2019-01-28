@@ -1,6 +1,8 @@
-package gapp.season.encryptlib;
+package gapp.season.encryptlib.code;
 
 import android.text.TextUtils;
+
+import gapp.season.encryptlib.ElUtil;
 
 /**
  * 十六进制工具类
