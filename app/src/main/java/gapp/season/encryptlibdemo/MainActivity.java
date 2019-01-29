@@ -6,7 +6,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.TextView;
 
+import java.security.KeyPair;
+
 import gapp.season.encryptlib.SecretKeyGenerator;
+import gapp.season.encryptlib.asymmetric.RSAUtil;
 import gapp.season.encryptlib.code.Base64Util;
 import gapp.season.encryptlib.code.ByteUtil;
 import gapp.season.encryptlib.code.HexUtil;
@@ -69,6 +72,13 @@ public class MainActivity extends AppCompatActivity {
             DESedeUtil.setDefaultIv(desIv);
             String desData = DESUtil.encrypt(str2);
             String desedeData = DESedeUtil.encrypt(str2);
+            KeyPair keyPair = SecretKeyGenerator.generateRSAKeyPair(1024);
+            RSAUtil.setPublicKey(SecretKeyGenerator.getPublicKeyStr(keyPair));
+            RSAUtil.setPrivateKey(SecretKeyGenerator.getPrivateKeyStr(keyPair));
+            String data = "Markdown是一种可以使用普通文本编辑器编写的标记语言，通过简单的标记语法，它可以使普通文本内容具有一定的格式。它允许人们使用易读易写的纯文本格式编写文档，然后转换成格式丰富的HTML页面，Markdown文件的后缀名便是“.md”";
+            String rsaData1 = RSAUtil.encryptByPublicKey(data);
+            String rsaData2 = RSAUtil.encryptByPrivateKey(data);
+            String rsaSign = RSAUtil.sign(HashUtil.md5(data));
             return ipInt + "\n"
                     + ip + "\n"
                     + charInt1 + "\n"
@@ -92,13 +102,19 @@ public class MainActivity extends AppCompatActivity {
                     + HexUtil.toHexStr(XorUtil.xor(HexUtil.decodeHexStr(str1), (byte) 0x68)) + "\n"
                     + HexUtil.toHexStr(XorUtil.xorByteArray(HexUtil.decodeHexStr(str1), HexUtil.decodeHexStr(str2))) + "\n"
                     + XorUtil.xorHexStr(str1, XorUtil.xorHexStr(str1, str2)) + "\n"
-                    + SecretKeyGenerator.randomGenerateKeys() + "\n"
                     + aesData + "\n"
                     + AESUtil.decryptGCM(aesData) + "\n"
                     + desData + "\n"
                     + DESUtil.decrypt(desData) + "\n"
                     + desedeData + "\n"
-                    + DESedeUtil.decrypt(desedeData) + "\n";
+                    + DESedeUtil.decrypt(desedeData) + "\n"
+                    + "【" + rsaData1 + "】\n"
+                    + "【" + rsaData2 + "】\n"
+                    + "【" + rsaSign + "】\n"
+                    + RSAUtil.decryptByPrivateKey(rsaData1) + "\n"
+                    + RSAUtil.decryptByPublicKey(rsaData2) + "\n"
+                    + RSAUtil.verify(HashUtil.md5(data), rsaSign) + "\n"
+                    + SecretKeyGenerator.randomGenerateKeys() + "\n";
         } catch (Exception e) {
             e.printStackTrace();
         }
