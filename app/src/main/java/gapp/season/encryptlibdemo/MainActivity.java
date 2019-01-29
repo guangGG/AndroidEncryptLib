@@ -1,5 +1,6 @@
 package gapp.season.encryptlibdemo;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -12,6 +13,8 @@ import gapp.season.encryptlib.code.HexUtil;
 import gapp.season.encryptlib.hash.HashExtUtil;
 import gapp.season.encryptlib.hash.HashUtil;
 import gapp.season.encryptlib.symmetric.AESUtil;
+import gapp.season.encryptlib.symmetric.DESUtil;
+import gapp.season.encryptlib.symmetric.DESedeUtil;
 import gapp.season.encryptlib.symmetric.XorUtil;
 
 public class MainActivity extends AppCompatActivity {
@@ -36,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
         tv.setText(str);
     }
 
+    @SuppressLint("NewApi")
     private String getShowText() {
         try {
             int num = 2019012820;
@@ -55,7 +59,16 @@ public class MainActivity extends AppCompatActivity {
             byte[] iv = new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
             AESUtil.setDefaultKey(Base64Util.encodeToString(keyBytes).trim());
             AESUtil.setDefaultGCMIv(Base64Util.encodeToString(iv).trim());
-            String aesData = AESUtil.encryptGCM("hello world");
+            String aesData = AESUtil.encryptGCM(str2);
+            String desKey = SecretKeyGenerator.generateKey(0, DESUtil.KEY_GENERATOR_DES);
+            String desedeKey = SecretKeyGenerator.generateKey(0, DESedeUtil.KEY_GENERATOR_DESEDE);
+            String desIv = SecretKeyGenerator.generateKey(64, DESUtil.KEY_GENERATOR_DES);
+            DESUtil.setDefaultKey(desKey);
+            DESUtil.setDefaultIv(desIv);
+            DESedeUtil.setDefaultKey(desedeKey);
+            DESedeUtil.setDefaultIv(desIv);
+            String desData = DESUtil.encrypt(str2);
+            String desedeData = DESedeUtil.encrypt(str2);
             return ipInt + "\n"
                     + ip + "\n"
                     + charInt1 + "\n"
@@ -81,7 +94,11 @@ public class MainActivity extends AppCompatActivity {
                     + XorUtil.xorHexStr(str1, XorUtil.xorHexStr(str1, str2)) + "\n"
                     + SecretKeyGenerator.randomGenerateKeys() + "\n"
                     + aesData + "\n"
-                    + AESUtil.decryptGCM(aesData) + "\n";
+                    + AESUtil.decryptGCM(aesData) + "\n"
+                    + desData + "\n"
+                    + DESUtil.decrypt(desData) + "\n"
+                    + desedeData + "\n"
+                    + DESedeUtil.decrypt(desedeData) + "\n";
         } catch (Exception e) {
             e.printStackTrace();
         }
