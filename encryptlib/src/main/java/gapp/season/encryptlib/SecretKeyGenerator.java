@@ -1,6 +1,7 @@
 package gapp.season.encryptlib;
 
 import android.text.TextUtils;
+import android.util.Base64;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -8,7 +9,6 @@ import java.security.SecureRandom;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
-import gapp.season.encryptlib.code.Base64Util;
 import gapp.season.encryptlib.hash.HashUtil;
 import gapp.season.encryptlib.symmetric.AESUtil;
 import gapp.season.encryptlib.symmetric.DESUtil;
@@ -69,7 +69,7 @@ public class SecretKeyGenerator {
         if (TextUtils.isEmpty(algorithm)) {
             algorithm = AESUtil.KEY_GENERATOR_AES;
         }
-        return Base64Util.encodeToString(generateKey(keysize, new byte[0], algorithm)).trim();
+        return Base64.encodeToString(generateKey(keysize, new byte[0], algorithm), Base64.DEFAULT).trim();
     }
 
     /**
