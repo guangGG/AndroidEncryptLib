@@ -5,6 +5,7 @@ import android.os.Build;
 import android.support.annotation.RequiresApi;
 import android.util.Base64;
 
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
@@ -48,14 +49,14 @@ public class AESUtil {
     /**
      * 获取默认密钥的16位字节数组
      */
-    private static byte[] getKeyBytes() {
+    public static byte[] getKeyBytes() {
         return Base64.decode(sKey, Base64.DEFAULT);
     }
 
     /**
      * 获取默认GCM向量
      */
-    private static byte[] getIvBytes() {
+    public static byte[] getIvBytes() {
         return Base64.decode(sGcmIv, Base64.DEFAULT);
     }
 
@@ -77,19 +78,23 @@ public class AESUtil {
     /**
      * AES-ECB加密(使用默认密钥)
      */
-    public static byte[] encrypt(byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException,
-            InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        return encrypt(data, getKeyBytes(), AES_ALGORITHM_ECB);
+    public static byte[] encrypt(byte[] data) throws Exception {
+        return encrypt(data, getKeyBytes(), null, AES_ALGORITHM_ECB);
     }
 
     /**
      * AES加密
      */
-    public static byte[] encrypt(byte[] data, byte[] keyBytes, String algorithm) throws NoSuchAlgorithmException,
-            NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    public static byte[] encrypt(byte[] data, byte[] keyBytes, byte[] aesIv, String algorithm) throws NoSuchAlgorithmException,
+            NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
         SecretKeySpec key = new SecretKeySpec(keyBytes, KEY_GENERATOR_AES);
         Cipher cipher = Cipher.getInstance(algorithm);
-        cipher.init(Cipher.ENCRYPT_MODE, key);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT && aesIv != null) {
+            GCMParameterSpec parameterSpec = new GCMParameterSpec(128, aesIv);
+            cipher.init(Cipher.ENCRYPT_MODE, key, parameterSpec);
+        } else {
+            cipher.init(Cipher.ENCRYPT_MODE, key);
+        }
         return cipher.doFinal(data);
     }
 
@@ -111,19 +116,23 @@ public class AESUtil {
     /**
      * AES-ECB解密(使用默认密钥)
      */
-    public static byte[] decrypt(byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException,
-            InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        return decrypt(data, getKeyBytes(), AES_ALGORITHM_ECB);
+    public static byte[] decrypt(byte[] data) throws Exception {
+        return decrypt(data, getKeyBytes(), null, AES_ALGORITHM_ECB);
     }
 
     /**
      * AES解密
      */
-    public static byte[] decrypt(byte[] data, byte[] keyBytes, String algorithm) throws NoSuchAlgorithmException,
-            NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    public static byte[] decrypt(byte[] data, byte[] keyBytes, byte[] aesIv, String algorithm) throws NoSuchAlgorithmException,
+            NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
         SecretKeySpec key = new SecretKeySpec(keyBytes, KEY_GENERATOR_AES);
         Cipher cipher = Cipher.getInstance(algorithm);
-        cipher.init(Cipher.DECRYPT_MODE, key);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT && aesIv != null) {
+            GCMParameterSpec parameterSpec = new GCMParameterSpec(128, aesIv);
+            cipher.init(Cipher.DECRYPT_MODE, key, parameterSpec);
+        } else {
+            cipher.init(Cipher.DECRYPT_MODE, key);
+        }
         return cipher.doFinal(data);
     }
 
@@ -150,12 +159,8 @@ public class AESUtil {
      */
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public static byte[] encryptGCM(byte[] data, byte[] keyBytes, byte[] aesIv) throws Exception {
-        SecretKeySpec key = new SecretKeySpec(keyBytes, KEY_GENERATOR_AES);
-        Cipher cipher = Cipher.getInstance(AES_ALGORITHM_GCM);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
-            GCMParameterSpec parameterSpec = new GCMParameterSpec(128, aesIv);
-            cipher.init(Cipher.ENCRYPT_MODE, key, parameterSpec);
-            return cipher.doFinal(data);
+            return encrypt(data, keyBytes, aesIv, AES_ALGORITHM_GCM);
         } else {
             throw new RuntimeException("Android API 小于19，无法使用AES-GCM方式加解密算法");
         }
@@ -184,12 +189,8 @@ public class AESUtil {
      */
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public static byte[] decryptGCM(byte[] data, byte[] keyBytes, byte[] aesIv) throws Exception {
-        SecretKeySpec key = new SecretKeySpec(keyBytes, KEY_GENERATOR_AES);
-        Cipher cipher = Cipher.getInstance(AES_ALGORITHM_GCM);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
-            GCMParameterSpec parameterSpec = new GCMParameterSpec(128, aesIv);
-            cipher.init(Cipher.DECRYPT_MODE, key, parameterSpec);
-            return cipher.doFinal(data);
+            return decrypt(data, keyBytes, aesIv, AES_ALGORITHM_GCM);
         } else {
             throw new RuntimeException("Android API 小于19，无法使用AES-GCM方式加解密算法");
         }
