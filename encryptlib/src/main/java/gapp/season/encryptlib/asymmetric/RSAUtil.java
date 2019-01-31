@@ -47,14 +47,15 @@ public class RSAUtil {
      * 用默认公钥加密数据
      */
     public static String encryptByPublicKey(String data) throws Exception {
-        return Base64.encodeToString(encryptByPublicKey(data.getBytes(), SecretKeyGenerator.getPublicKey(sPublicKey)), Base64.DEFAULT).trim();
+        return Base64.encodeToString(encryptByPublicKey(data.getBytes(),
+                SecretKeyGenerator.getPublicKey(sPublicKey), RSA_ALGORITHM), Base64.DEFAULT).trim();
     }
 
     /**
      * 用公钥加密
      */
-    public static byte[] encryptByPublicKey(byte[] data, PublicKey key) throws Exception {
-        Cipher cipher = Cipher.getInstance(RSA_ALGORITHM);
+    public static byte[] encryptByPublicKey(byte[] data, PublicKey key, String algorithm) throws Exception {
+        Cipher cipher = Cipher.getInstance(algorithm);
         cipher.init(Cipher.ENCRYPT_MODE, key);
         return encrypt(data, cipher);
     }
@@ -63,14 +64,15 @@ public class RSAUtil {
      * 用默认私钥加密数据
      */
     public static String encryptByPrivateKey(String data) throws Exception {
-        return Base64.encodeToString(encryptByPrivateKey(data.getBytes(), SecretKeyGenerator.getPrivateKey(sPrivateKey)), Base64.DEFAULT).trim();
+        return Base64.encodeToString(encryptByPrivateKey(data.getBytes(),
+                SecretKeyGenerator.getPrivateKey(sPrivateKey), RSA_ALGORITHM), Base64.DEFAULT).trim();
     }
 
     /**
      * 用私钥加密
      */
-    public static byte[] encryptByPrivateKey(byte[] data, PrivateKey key) throws Exception {
-        Cipher cipher = Cipher.getInstance(RSA_ALGORITHM);
+    public static byte[] encryptByPrivateKey(byte[] data, PrivateKey key, String algorithm) throws Exception {
+        Cipher cipher = Cipher.getInstance(algorithm);
         cipher.init(Cipher.ENCRYPT_MODE, key);
         return encrypt(data, cipher);
     }
@@ -103,14 +105,15 @@ public class RSAUtil {
      * 用默认公钥解密数据
      */
     public static String decryptByPublicKey(String data) throws Exception {
-        return new String(decryptByPublicKey(Base64.decode(data, Base64.DEFAULT), SecretKeyGenerator.getPublicKey(sPublicKey)));
+        return new String(decryptByPublicKey(Base64.decode(data, Base64.DEFAULT),
+                SecretKeyGenerator.getPublicKey(sPublicKey), RSA_ALGORITHM));
     }
 
     /**
      * 用公钥解密
      */
-    public static byte[] decryptByPublicKey(byte[] data, PublicKey key) throws Exception {
-        Cipher cipher = Cipher.getInstance(RSA_ALGORITHM);
+    public static byte[] decryptByPublicKey(byte[] data, PublicKey key, String algorithm) throws Exception {
+        Cipher cipher = Cipher.getInstance(algorithm);
         cipher.init(Cipher.DECRYPT_MODE, key);
         return decrypt(data, cipher);
     }
@@ -119,14 +122,15 @@ public class RSAUtil {
      * 用默认私钥解密数据
      */
     public static String decryptByPrivateKey(String data) throws Exception {
-        return new String(decryptByPrivateKey(Base64.decode(data, Base64.DEFAULT), SecretKeyGenerator.getPrivateKey(sPrivateKey)));
+        return new String(decryptByPrivateKey(Base64.decode(data, Base64.DEFAULT),
+                SecretKeyGenerator.getPrivateKey(sPrivateKey), RSA_ALGORITHM));
     }
 
     /**
      * 用私钥解密
      */
-    public static byte[] decryptByPrivateKey(byte[] data, PrivateKey key) throws Exception {
-        Cipher cipher = Cipher.getInstance(RSA_ALGORITHM);
+    public static byte[] decryptByPrivateKey(byte[] data, PrivateKey key, String algorithm) throws Exception {
+        Cipher cipher = Cipher.getInstance(algorithm);
         cipher.init(Cipher.DECRYPT_MODE, key);
         return decrypt(data, cipher);
     }
@@ -159,7 +163,8 @@ public class RSAUtil {
      * 用默认私钥对信息生成签名
      */
     public static String sign(String data) throws Exception {
-        return Base64.encodeToString(sign(data.getBytes(), SecretKeyGenerator.getPrivateKey(sPrivateKey)), Base64.DEFAULT).trim();
+        return Base64.encodeToString(sign(data.getBytes(), SecretKeyGenerator.getPrivateKey(sPrivateKey),
+                SIGNATURE_ALGORITHM), Base64.DEFAULT).trim();
     }
 
     /**
@@ -168,8 +173,8 @@ public class RSAUtil {
      * @param data       信息数据(通常使用hash值)
      * @param privateKey 私钥
      */
-    public static byte[] sign(byte[] data, PrivateKey privateKey) throws Exception {
-        Signature signature = Signature.getInstance(SIGNATURE_ALGORITHM);
+    public static byte[] sign(byte[] data, PrivateKey privateKey, String algorithm) throws Exception {
+        Signature signature = Signature.getInstance(algorithm);
         signature.initSign(privateKey);
         signature.update(data);
         return signature.sign();
@@ -179,7 +184,8 @@ public class RSAUtil {
      * 用默认公钥校验签名
      */
     public static boolean verify(String data, String sign) throws Exception {
-        return verify(data.getBytes(), Base64.decode(sign, Base64.DEFAULT), SecretKeyGenerator.getPublicKey(sPublicKey));
+        return verify(data.getBytes(), Base64.decode(sign, Base64.DEFAULT),
+                SecretKeyGenerator.getPublicKey(sPublicKey), SIGNATURE_ALGORITHM);
     }
 
     /**
@@ -189,8 +195,8 @@ public class RSAUtil {
      * @param sign      签名
      * @param publicKey 公钥
      */
-    public static boolean verify(byte[] data, byte[] sign, PublicKey publicKey) throws Exception {
-        Signature signature = Signature.getInstance(SIGNATURE_ALGORITHM);
+    public static boolean verify(byte[] data, byte[] sign, PublicKey publicKey, String algorithm) throws Exception {
+        Signature signature = Signature.getInstance(algorithm);
         signature.initVerify(publicKey);
         signature.update(data);
         return signature.verify(sign);
