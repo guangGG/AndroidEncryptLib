@@ -18,6 +18,15 @@ android {
     }
 }
 
+repositories {
+    //引用libs中的aar时需配置
+    flatDir {
+        dirs 'libs'
+    }
+    //引用时，若还未添加到Jcenter成功时，可配置私有仓库地址使用
+    maven { url 'https://dl.bintray.com/guanggg/maven' }
+}
+
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'com.android.support:appcompat-v7:28.0.0'
@@ -26,5 +35,6 @@ dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 
-    implementation project(':encryptlib')
+    //implementation project(':encryptlib')
+    implementation 'gapp.season:EncryptLib:0.0.1'
 }
