@@ -23,8 +23,10 @@ import javax.crypto.spec.SecretKeySpec;
  */
 public class AESUtil {
     public static final String KEY_GENERATOR_AES = "AES";
-    public static final String AES_ALGORITHM_ECB = "AES/ECB/PKCS5Padding"; //ECB是比较旧的模式，对低版本兼容性较好
-    public static final String AES_ALGORITHM_GCM = "AES/GCM/NoPadding"; //Android-api-19及以上，推荐使用GCM模式
+    //API1+   模式：CBC/CFB/CTR/CTS/ECB/OFB   Padding：ISO10126Padding/NoPadding/PKCS5Padding
+    public static final String AES_ALGORITHM_ECB = "AES/ECB/PKCS5Padding"; //ECB-PKCS5是比较常用的模式，对低版本兼容性较好
+    //API10+   模式：GCM   Padding：NoPadding
+    public static final String AES_ALGORITHM_GCM = "AES/GCM/NoPadding"; //GCM模式安全性相对较高
 
     private static String sKey; //应用初始化时设置的默认密钥
     private static String sGcmIv; //应用初始化时设置的默认GCM向量

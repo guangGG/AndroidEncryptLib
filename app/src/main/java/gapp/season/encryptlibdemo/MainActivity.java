@@ -76,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
             KeyPair keyPair = SecretKeyGenerator.generateRSAKeyPair(1024);
             RSAUtil.setPublicKey(SecretKeyGenerator.getPublicKeyStr(keyPair));
             RSAUtil.setPrivateKey(SecretKeyGenerator.getPrivateKeyStr(keyPair));
-            byte[] pSource = SecretKeyGenerator.generateKeyByWord("9102");
+            byte[] pSource = new byte[]{100, 56, 24, 78};
             RSAUtil.setPSource(Base64.encodeToString(pSource, Base64.DEFAULT).trim());
             String data = "Markdown是一种可以使用普通文本编辑器编写的标记语言，通过简单的标记语法，它可以使普通文本内容具有一定的格式。它允许人们使用易读易写的纯文本格式编写文档，然后转换成格式丰富的HTML页面，Markdown文件的后缀名便是“.md”";
             String algorithm1 = RSAUtil.RSA_ALGORITHM_ECB_OAEP_SHA1;

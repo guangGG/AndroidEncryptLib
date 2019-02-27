@@ -41,7 +41,7 @@ publish {
     userOrg = 'guanggg'
     groupId = 'gapp.season'
     artifactId = 'EncryptLib'
-    publishVersion = '0.0.1'
+    publishVersion = '0.0.2'
     desc = 'android encrypt library'
     website = 'https://github.com/guangGG/AndroidEncryptLib'
 }

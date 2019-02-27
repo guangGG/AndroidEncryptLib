@@ -21,6 +21,7 @@ allprojects {
         jcenter()
     }
     tasks.withType(Javadoc) {
+        options.addStringOption('Xdoclint:none', '-quiet')
         options {
             encoding "UTF-8"
             charSet 'UTF-8'
