@@ -3,6 +3,7 @@ package gapp.season.encryptlibdemo;
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Base64;
 import android.view.View;
 import android.widget.TextView;
 
@@ -75,9 +76,13 @@ public class MainActivity extends AppCompatActivity {
             KeyPair keyPair = SecretKeyGenerator.generateRSAKeyPair(1024);
             RSAUtil.setPublicKey(SecretKeyGenerator.getPublicKeyStr(keyPair));
             RSAUtil.setPrivateKey(SecretKeyGenerator.getPrivateKeyStr(keyPair));
+            byte[] pSource = SecretKeyGenerator.generateKeyByWord("9102");
+            RSAUtil.setPSource(Base64.encodeToString(pSource, Base64.DEFAULT).trim());
             String data = "Markdown是一种可以使用普通文本编辑器编写的标记语言，通过简单的标记语法，它可以使普通文本内容具有一定的格式。它允许人们使用易读易写的纯文本格式编写文档，然后转换成格式丰富的HTML页面，Markdown文件的后缀名便是“.md”";
-            String rsaData1 = RSAUtil.encryptByPublicKey(data);
-            String rsaData2 = RSAUtil.encryptByPrivateKey(data);
+            String algorithm1 = RSAUtil.RSA_ALGORITHM_ECB_OAEP_SHA1;
+            String algorithm2 = RSAUtil.RSA_ALGORITHM_PKCS1;
+            String rsaData1 = RSAUtil.encryptByPublicKey(data, algorithm1);
+            String rsaData2 = RSAUtil.encryptByPrivateKey(data, algorithm2);
             String rsaSign = RSAUtil.sign(HashUtil.md5(data));
             return ipInt + "\n"
                     + ip + "\n"
@@ -111,8 +116,8 @@ public class MainActivity extends AppCompatActivity {
                     + "【" + rsaData1 + "】\n"
                     + "【" + rsaData2 + "】\n"
                     + "【" + rsaSign + "】\n"
-                    + RSAUtil.decryptByPrivateKey(rsaData1) + "\n"
-                    + RSAUtil.decryptByPublicKey(rsaData2) + "\n"
+                    + RSAUtil.decryptByPrivateKey(rsaData1, algorithm1) + "\n"
+                    + RSAUtil.decryptByPublicKey(rsaData2, algorithm2) + "\n"
                     + RSAUtil.verify(HashUtil.md5(data), rsaSign) + "\n"
                     + SecretKeyGenerator.randomGenerateKeys() + "\n";
         } catch (Exception e) {

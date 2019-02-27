@@ -7,24 +7,43 @@ import java.io.IOException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
+import java.security.spec.AlgorithmParameterSpec;
+import java.security.spec.MGF1ParameterSpec;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
 
 import gapp.season.encryptlib.SecretKeyGenerator;
 
 /**
- * RSA工具类，签名+加解密(支持长字符串分段加解密)，一般服务端保存私钥，客户端保存公钥
+ * RSA工具类(密钥长度1024)，签名+加解密(支持长字符串分段加解密)，一般服务端保存私钥，客户端保存公钥
  * 【公钥加密、私钥解密】或【私钥加密、公钥解密】
  * 【私钥签名、公钥验签】
  */
 public class RSAUtil {
     public static final String KEY_GENERATOR_RSA = "RSA";
     //android中默认填充方式是RSA/ECB/NoPadding，一般使用的填充方式是RSA/ECB/PKCS1Padding
-    private static final String RSA_ALGORITHM = "RSA/ECB/PKCS1Padding";
+    public static final String RSA_ALGORITHM_NO = "RSA/NONE/NoPadding"; //最大加密长度127，分段时解密会出现乱码
+    public static final String RSA_ALGORITHM_PKCS1 = "RSA/NONE/PKCS1Padding"; //分段长度117(128-11)
+    public static final String RSA_ALGORITHM_OAEP = "RSA/NONE/OAEPPadding"; //分段长度86(128-40-2) [不能用于私钥加密公钥解密]
+    public static final String RSA_ALGORITHM_OAEP_SHA1 = "RSA/NONE/OAEPwithSHA-1andMGF1Padding"; //分段长度86(128-40-2) [不能用于私钥加密公钥解密]
+    public static final String RSA_ALGORITHM_OAEP_SHA256 = "RSA/NONE/OAEPwithSHA-256andMGF1Padding"; //分段长度62(128-64-2) [不能用于私钥加密公钥解密]
+    public static final String RSA_ALGORITHM_ECB_NO = "RSA/ECB/NoPadding"; //最大加密长度127，分段时解密会出现乱码
+    public static final String RSA_ALGORITHM_ECB_PKCS1 = "RSA/ECB/PKCS1Padding"; //分段长度117(128-11)
+    public static final String RSA_ALGORITHM_ECB_OAEP = "RSA/ECB/OAEPPadding"; //分段长度86(128-40-2) [不能用于私钥加密公钥解密]
+    public static final String RSA_ALGORITHM_ECB_OAEP_SHA1 = "RSA/ECB/OAEPwithSHA-1andMGF1Padding"; //分段长度86(128-40-2) [不能用于私钥加密公钥解密]
+    public static final String RSA_ALGORITHM_ECB_OAEP_SHA256 = "RSA/ECB/OAEPwithSHA-256andMGF1Padding"; //分段长度62(128-64-2) [不能用于私钥加密公钥解密]
+    private static final String RSA_ALGORITHM = RSA_ALGORITHM_ECB_PKCS1;
     //签名、验签算法方式
-    private static final String SIGNATURE_ALGORITHM = "MD5withRSA"; //SHA1WithRSA
+    public static final String SIGNATURE_ALGORITHM_NONE = "NONEwithRSA";
+    public static final String SIGNATURE_ALGORITHM_MD5 = "MD5withRSA";
+    public static final String SIGNATURE_ALGORITHM_SHA1 = "SHA1WithRSA";
+    public static final String SIGNATURE_ALGORITHM_SHA256 = "SHA256withRSA";
+    public static final String SIGNATURE_ALGORITHM_SHA512 = "SHA512withRSA";
+    private static final String SIGNATURE_ALGORITHM = SIGNATURE_ALGORITHM_MD5;
 
     // RSA分段加密明文字节大小
     private static final int MAX_ENCRYPT_BLOCK = 117;
@@ -34,6 +53,7 @@ public class RSAUtil {
     // 默认密钥
     private static String sPublicKey;
     private static String sPrivateKey;
+    private static String sPSource;
 
     public static void setPublicKey(String publicKey) {
         sPublicKey = publicKey;
@@ -43,58 +63,137 @@ public class RSAUtil {
         sPrivateKey = privateKey;
     }
 
+    public static void setPSource(String PSource) {
+        sPSource = PSource;
+    }
+
+    private static byte[] getPSource() {
+        if (sPSource == null) {
+            return null;
+        } else {
+            return Base64.decode(sPSource, Base64.DEFAULT);
+        }
+    }
+
+    public static int getMaxEncryptBlock(String algorithm) {
+        if (RSA_ALGORITHM_NO.equals(algorithm) || RSA_ALGORITHM_ECB_NO.equals(algorithm)) {
+            return 127;
+        } else if (RSA_ALGORITHM_PKCS1.equals(algorithm) || RSA_ALGORITHM_ECB_PKCS1.equals(algorithm)) {
+            return 117;
+        } else if (RSA_ALGORITHM_OAEP.equals(algorithm) || RSA_ALGORITHM_ECB_OAEP.equals(algorithm)) {
+            return 86;
+        } else if (RSA_ALGORITHM_OAEP_SHA1.equals(algorithm) || RSA_ALGORITHM_ECB_OAEP_SHA1.equals(algorithm)) {
+            return 86;
+        } else if (RSA_ALGORITHM_OAEP_SHA256.equals(algorithm) || RSA_ALGORITHM_ECB_OAEP_SHA256.equals(algorithm)) {
+            return 62;
+        } else {
+            return 128;
+        }
+    }
+
+    public static OAEPParameterSpec getOAEPParameterSpec(String algorithm, byte[] pSrc) {
+        if (RSA_ALGORITHM_OAEP.equals(algorithm) || RSA_ALGORITHM_ECB_OAEP.equals(algorithm) ||
+                RSA_ALGORITHM_OAEP_SHA1.equals(algorithm) || RSA_ALGORITHM_ECB_OAEP_SHA1.equals(algorithm)) {
+            return new OAEPParameterSpec("SHA-1", "MGF1",
+                    MGF1ParameterSpec.SHA1, new PSource.PSpecified(pSrc));
+        } else if (RSA_ALGORITHM_OAEP_SHA256.equals(algorithm) || RSA_ALGORITHM_ECB_OAEP_SHA256.equals(algorithm)) {
+            return new OAEPParameterSpec("SHA-256", "MGF1",
+                    MGF1ParameterSpec.SHA256, new PSource.PSpecified(pSrc));
+        } else {
+            return null;
+        }
+    }
+
     /**
      * 用默认公钥加密数据
      */
     public static String encryptByPublicKey(String data) throws Exception {
-        return Base64.encodeToString(encryptByPublicKey(data.getBytes(),
-                SecretKeyGenerator.getPublicKey(sPublicKey), RSA_ALGORITHM), Base64.DEFAULT).trim();
+        return Base64.encodeToString(encryptByPublicKey(data.getBytes(), SecretKeyGenerator.getPublicKey(
+                sPublicKey), null, RSA_ALGORITHM, MAX_ENCRYPT_BLOCK), Base64.DEFAULT).trim();
+    }
+
+    /**
+     * 用默认公钥加密数据
+     */
+    public static String encryptByPublicKey(String data, String algorithm) throws Exception {
+        return Base64.encodeToString(encryptByPublicKey(data.getBytes(), SecretKeyGenerator.getPublicKey(sPublicKey),
+                getOAEPParameterSpec(algorithm, getPSource()), algorithm, -1), Base64.DEFAULT).trim();
     }
 
     /**
      * 用公钥加密
+     *
+     * @param maxEncryptBlock 加密分段长度，传<=0则使用默认分段长度
      */
-    public static byte[] encryptByPublicKey(byte[] data, PublicKey key, String algorithm) throws Exception {
+    public static byte[] encryptByPublicKey(byte[] data, PublicKey key, AlgorithmParameterSpec params,
+                                            String algorithm, int maxEncryptBlock) throws Exception {
         Cipher cipher = Cipher.getInstance(algorithm);
-        cipher.init(Cipher.ENCRYPT_MODE, key);
-        return encrypt(data, cipher);
+        if (params == null) {
+            cipher.init(Cipher.ENCRYPT_MODE, key);
+        } else {
+            cipher.init(Cipher.ENCRYPT_MODE, key, params);
+        }
+        if (maxEncryptBlock <= 0) {
+            maxEncryptBlock = getMaxEncryptBlock(algorithm);
+        }
+        return encrypt(data, maxEncryptBlock, cipher);
     }
 
     /**
      * 用默认私钥加密数据
      */
     public static String encryptByPrivateKey(String data) throws Exception {
-        return Base64.encodeToString(encryptByPrivateKey(data.getBytes(),
-                SecretKeyGenerator.getPrivateKey(sPrivateKey), RSA_ALGORITHM), Base64.DEFAULT).trim();
+        return Base64.encodeToString(encryptByPrivateKey(data.getBytes(), SecretKeyGenerator.getPrivateKey(
+                sPrivateKey), null, RSA_ALGORITHM, MAX_ENCRYPT_BLOCK), Base64.DEFAULT).trim();
+    }
+
+    /**
+     * 用默认私钥加密数据
+     */
+    public static String encryptByPrivateKey(String data, String algorithm) throws Exception {
+        return Base64.encodeToString(encryptByPrivateKey(data.getBytes(), SecretKeyGenerator.getPrivateKey(sPrivateKey),
+                getOAEPParameterSpec(algorithm, getPSource()), algorithm, -1), Base64.DEFAULT).trim();
     }
 
     /**
      * 用私钥加密
+     *
+     * @param maxEncryptBlock 加密分段长度，传<=0则使用默认分段长度
      */
-    public static byte[] encryptByPrivateKey(byte[] data, PrivateKey key, String algorithm) throws Exception {
+    public static byte[] encryptByPrivateKey(byte[] data, PrivateKey key, AlgorithmParameterSpec params,
+                                             String algorithm, int maxEncryptBlock) throws Exception {
         Cipher cipher = Cipher.getInstance(algorithm);
-        cipher.init(Cipher.ENCRYPT_MODE, key);
-        return encrypt(data, cipher);
+        if (params == null) {
+            cipher.init(Cipher.ENCRYPT_MODE, key);
+        } else {
+            cipher.init(Cipher.ENCRYPT_MODE, key, params);
+        }
+        if (maxEncryptBlock <= 0) {
+            maxEncryptBlock = getMaxEncryptBlock(algorithm);
+        }
+        return encrypt(data, maxEncryptBlock, cipher);
     }
 
     /**
      * 分段加密数据
+     *
+     * @param maxEncryptBlock 加密分段长度
      */
-    private static byte[] encrypt(byte[] data, Cipher cipher) throws BadPaddingException, IllegalBlockSizeException, IOException {
+    private static byte[] encrypt(byte[] data, int maxEncryptBlock, Cipher cipher) throws BadPaddingException, IllegalBlockSizeException, IOException {
         int inputLen = data.length;
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         int offSet = 0;
         byte[] cache;
         int i = 0;
         while (inputLen - offSet > 0) {
-            if (inputLen - offSet > MAX_ENCRYPT_BLOCK) {
-                cache = cipher.doFinal(data, offSet, MAX_ENCRYPT_BLOCK);
+            if (inputLen - offSet > maxEncryptBlock) {
+                cache = cipher.doFinal(data, offSet, maxEncryptBlock);
             } else {
                 cache = cipher.doFinal(data, offSet, inputLen - offSet);
             }
             out.write(cache, 0, cache.length);
             i++;
-            offSet = i * MAX_ENCRYPT_BLOCK;
+            offSet = i * maxEncryptBlock;
         }
         byte[] encryptedData = out.toByteArray();
         out.close();
@@ -106,15 +205,28 @@ public class RSAUtil {
      */
     public static String decryptByPublicKey(String data) throws Exception {
         return new String(decryptByPublicKey(Base64.decode(data, Base64.DEFAULT),
-                SecretKeyGenerator.getPublicKey(sPublicKey), RSA_ALGORITHM));
+                SecretKeyGenerator.getPublicKey(sPublicKey), null, RSA_ALGORITHM));
+    }
+
+    /**
+     * 用默认公钥解密数据
+     */
+    public static String decryptByPublicKey(String data, String algorithm) throws Exception {
+        return new String(decryptByPublicKey(Base64.decode(data, Base64.DEFAULT), SecretKeyGenerator.getPublicKey(sPublicKey),
+                getOAEPParameterSpec(algorithm, getPSource()), algorithm));
     }
 
     /**
      * 用公钥解密
      */
-    public static byte[] decryptByPublicKey(byte[] data, PublicKey key, String algorithm) throws Exception {
+    public static byte[] decryptByPublicKey(byte[] data, PublicKey key,
+                                            AlgorithmParameterSpec params, String algorithm) throws Exception {
         Cipher cipher = Cipher.getInstance(algorithm);
-        cipher.init(Cipher.DECRYPT_MODE, key);
+        if (params == null) {
+            cipher.init(Cipher.DECRYPT_MODE, key);
+        } else {
+            cipher.init(Cipher.DECRYPT_MODE, key, params);
+        }
         return decrypt(data, cipher);
     }
 
@@ -123,15 +235,28 @@ public class RSAUtil {
      */
     public static String decryptByPrivateKey(String data) throws Exception {
         return new String(decryptByPrivateKey(Base64.decode(data, Base64.DEFAULT),
-                SecretKeyGenerator.getPrivateKey(sPrivateKey), RSA_ALGORITHM));
+                SecretKeyGenerator.getPrivateKey(sPrivateKey), null, RSA_ALGORITHM));
+    }
+
+    /**
+     * 用默认私钥解密数据
+     */
+    public static String decryptByPrivateKey(String data, String algorithm) throws Exception {
+        return new String(decryptByPrivateKey(Base64.decode(data, Base64.DEFAULT), SecretKeyGenerator.getPrivateKey(sPrivateKey),
+                getOAEPParameterSpec(algorithm, getPSource()), algorithm));
     }
 
     /**
      * 用私钥解密
      */
-    public static byte[] decryptByPrivateKey(byte[] data, PrivateKey key, String algorithm) throws Exception {
+    public static byte[] decryptByPrivateKey(byte[] data, PrivateKey key,
+                                             AlgorithmParameterSpec params, String algorithm) throws Exception {
         Cipher cipher = Cipher.getInstance(algorithm);
-        cipher.init(Cipher.DECRYPT_MODE, key);
+        if (params == null) {
+            cipher.init(Cipher.DECRYPT_MODE, key);
+        } else {
+            cipher.init(Cipher.DECRYPT_MODE, key, params);
+        }
         return decrypt(data, cipher);
     }
 
