@@ -19,7 +19,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 /**
  * AES加密算法
- * (使用128位长度的密钥，api-19以上推荐使用GCM方式加密)
+ * (使用128位长度的密钥，api-21及以上推荐使用GCM方式加密)
  */
 public class AESUtil {
     public static final String KEY_GENERATOR_AES = "AES";
