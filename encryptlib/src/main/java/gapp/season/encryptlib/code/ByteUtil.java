@@ -11,13 +11,32 @@ public class ByteUtil {
      * @throws IllegalArgumentException 传入的字节数组不符合条件
      */
     public static int bytesToInt(byte[] src) throws IllegalArgumentException {
+        return bytesToInt(src, false);
+    }
+
+    /**
+     * 将4个字节转为int值
+     *
+     * @param src     长度为4的字节数组
+     * @param reverse 字节数组是否逆序
+     * @return int值
+     * @throws IllegalArgumentException 传入的字节数组不符合条件
+     */
+    public static int bytesToInt(byte[] src, boolean reverse) throws IllegalArgumentException {
         if (src == null || src.length != 4) {
             throw new IllegalArgumentException("illegal byte array");
         }
-        return ((src[0] & 0xFF) << 24)
-                | ((src[1] & 0xFF) << 16)
-                | ((src[2] & 0xFF) << 8)
-                | (src[3] & 0xFF);
+        if (reverse) {
+            return (src[0] & 0xFF)
+                    | ((src[1] & 0xFF) << 8)
+                    | ((src[2] & 0xFF) << 16)
+                    | ((src[3] & 0xFF) << 24);
+        } else {
+            return ((src[0] & 0xFF) << 24)
+                    | ((src[1] & 0xFF) << 16)
+                    | ((src[2] & 0xFF) << 8)
+                    | (src[3] & 0xFF);
+        }
     }
 
     /**
@@ -27,11 +46,29 @@ public class ByteUtil {
      * @return 四个字节的byte数组
      */
     public static byte[] intToBytes(int value) {
+        return intToBytes(value, false);
+    }
+
+    /**
+     * 将int数值转换为四个字节的byte数组
+     *
+     * @param value   要转换的int值
+     * @param reverse 字节数组是否逆序
+     * @return 四个字节的byte数组
+     */
+    public static byte[] intToBytes(int value, boolean reverse) {
         byte[] src = new byte[4];
-        src[0] = (byte) ((value >> 24) & 0xFF);
-        src[1] = (byte) ((value >> 16) & 0xFF);
-        src[2] = (byte) ((value >> 8) & 0xFF);
-        src[3] = (byte) (value & 0xFF);
+        if (reverse) {
+            src[0] = (byte) (value & 0xFF);
+            src[1] = (byte) ((value >> 8) & 0xFF);
+            src[2] = (byte) ((value >> 16) & 0xFF);
+            src[3] = (byte) ((value >> 24) & 0xFF);
+        } else {
+            src[0] = (byte) ((value >> 24) & 0xFF);
+            src[1] = (byte) ((value >> 16) & 0xFF);
+            src[2] = (byte) ((value >> 8) & 0xFF);
+            src[3] = (byte) (value & 0xFF);
+        }
         return src;
     }
 
@@ -42,7 +79,7 @@ public class ByteUtil {
         try {
             InetAddress inetAddress = InetAddress.getByName(ipAddr);
             byte[] ipBytes = inetAddress.getAddress();
-            return bytesToInt(ipBytes);
+            return bytesToInt(ipBytes, true);
         } catch (Exception e) {
             throw new IllegalArgumentException(ipAddr + " is invalid IP");
         }
@@ -53,7 +90,7 @@ public class ByteUtil {
      */
     public static String intToIp(int value) {
         try {
-            byte[] ipBytes = intToBytes(value);
+            byte[] ipBytes = intToBytes(value, true);
             InetAddress inetAddress = InetAddress.getByAddress(ipBytes);
             return inetAddress.getHostAddress();
         } catch (Exception e) {
