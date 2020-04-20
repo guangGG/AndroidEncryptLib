@@ -11,6 +11,10 @@ import java.security.KeyPair;
 
 import gapp.season.encryptlib.SecretKeyGenerator;
 import gapp.season.encryptlib.asymmetric.RSAUtil;
+import gapp.season.encryptlib.builder.AESBuilder;
+import gapp.season.encryptlib.builder.DESBuilder;
+import gapp.season.encryptlib.builder.DESedeBuilder;
+import gapp.season.encryptlib.builder.RSABuilder;
 import gapp.season.encryptlib.code.Base64Util;
 import gapp.season.encryptlib.code.ByteUtil;
 import gapp.season.encryptlib.code.HexUtil;
@@ -87,6 +91,68 @@ public class MainActivity extends AppCompatActivity {
             String rsaData1 = RSAUtil.encryptByPublicKey(data, algorithm1);
             String rsaData2 = RSAUtil.encryptByPrivateKey(data, algorithm2);
             String rsaSign = RSAUtil.sign(HashUtil.md5(data));
+            //使用链式构造器-RSA
+            String buRsRSA = new RSABuilder()
+                    .toEncrypt()
+                    .setMode(RSABuilder.MODE_ECB)
+                    .setPadding(RSABuilder.PADDING_OAEP)
+                    .setPSrc(pSource) //OAEPPadding需要设置pSource
+                    .setData(data, null)
+                    .usePublicKey(true)
+                    .setKeyBytes(keyPair.getPublic().getEncoded())
+                    .doFinalBase64Str();
+            String buOrRSA = new RSABuilder()
+                    .toDecrypt()
+                    .setMode(RSABuilder.MODE_ECB)
+                    .setPadding(RSABuilder.PADDING_OAEP)
+                    .setPSrc(pSource) //OAEPPadding需要设置pSource
+                    .setBase64Data(buRsRSA)
+                    .usePublicKey(false)
+                    .setKeyBytes(keyPair.getPrivate().getEncoded())
+                    .doFinalStr(null);
+            //使用链式构造器-AES
+            String buRsAES = new AESBuilder()
+                    .toEncrypt()
+                    .setMode(AESBuilder.MODE_GCM)
+                    .setPadding(AESBuilder.PADDING_NONE)
+                    .setData(str2, "GBK")
+                    .setKeyBytes(keyBytes)
+                    .setIvBytes(ivCBC)
+                    .doFinalBase64Str();
+            String buOrAES = new AESBuilder()
+                    .toDecrypt()
+                    .setMode(AESBuilder.MODE_GCM)
+                    .setPadding(AESBuilder.PADDING_NONE)
+                    .setBase64Data(buRsAES)
+                    .setKeyBytes(keyBytes)
+                    .setIvBytes(ivCBC)
+                    .doFinalStr("GBK");
+            //使用链式构造器-DES
+            String buRsDES = new DESBuilder()
+                    .toEncrypt()
+                    .setData(str2, null)
+                    .setBase64Key(desKey)
+                    .setBase64Iv(desIv)
+                    .doFinalBase64Str();
+            String buOrDES = new DESBuilder()
+                    .toDecrypt()
+                    .setBase64Data(buRsDES)
+                    .setBase64Key(desKey)
+                    .setBase64Iv(desIv)
+                    .doFinalStr(null);
+            //使用链式构造器-DESede
+            String buRsDESede = new DESedeBuilder()
+                    .toEncrypt()
+                    .setData(str2, "GBK")
+                    .setBase64Key(desedeKey)
+                    .setBase64Iv(desIv)
+                    .doFinalBase64Str();
+            String buOrDESede = new DESedeBuilder()
+                    .toDecrypt()
+                    .setBase64Data(buRsDESede)
+                    .setBase64Key(desedeKey)
+                    .setBase64Iv(desIv)
+                    .doFinalStr("GBK");
             return ipInt + "\n"
                     + ip + "\n"
                     + charInt1 + "\n"
@@ -124,7 +190,15 @@ public class MainActivity extends AppCompatActivity {
                     + RSAUtil.decryptByPrivateKey(rsaData1, algorithm1) + "\n"
                     + RSAUtil.decryptByPublicKey(rsaData2, algorithm2) + "\n"
                     + RSAUtil.verify(HashUtil.md5(data), rsaSign) + "\n"
-                    + SecretKeyGenerator.randomGenerateKeys() + "\n";
+                    + SecretKeyGenerator.randomGenerateKeys() + "\n"
+                    + "buRsRSA: " + buRsRSA + "\n"
+                    + "buOrRSA: " + buOrRSA + "\n"
+                    + "buRsAES: " + buRsAES + "\n"
+                    + "buOrAES: " + buOrAES + "\n"
+                    + "buRsDES: " + buRsDES + "\n"
+                    + "buOrDES: " + buOrDES + "\n"
+                    + "buRsDESede: " + buRsDESede + "\n"
+                    + "buOrDESede: " + buOrDESede + "\n";
         } catch (Exception e) {
             e.printStackTrace();
         }

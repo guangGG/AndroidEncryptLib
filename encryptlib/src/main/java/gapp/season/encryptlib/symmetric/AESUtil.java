@@ -24,11 +24,11 @@ import javax.crypto.spec.SecretKeySpec;
  */
 public class AESUtil {
     public static final String KEY_GENERATOR_AES = "AES";
-    //API1+   模式：CBC/CFB/CTR/CTS/ECB/OFB   Padding：ISO10126Padding/NoPadding/PKCS5Padding
+    //API-8+   模式：CBC/CFB/CTR/CTS/ECB/OFB   Padding：ISO10126Padding/NoPadding/PKCS5Padding
     public static final String AES_ALGORITHM_ECB = "AES/ECB/PKCS5Padding"; //ECB-PKCS5是比较常用的模式，对低版本兼容性较好
-    //API:VERSION_CODES.L+ (最低支持到5.0)  模式：GCM   Padding：NoPadding
+    //API-21+ (最低支持到5.0)  模式：GCM   Padding：NoPadding
     public static final String AES_ALGORITHM_GCM = "AES/GCM/NoPadding"; //GCM可以提供对消息的加密和完整性校验
-    //API:VERSION_CODES.L+ (最低支持到5.0)  模式：CBC   Padding：PKCS5Padding
+    //API-8+   模式：CBC   Padding：PKCS5Padding
     public static final String AES_ALGORITHM_CBC = "AES/CBC/PKCS5Padding"; //密码分组链接模式 Cipher Block Chaining
 
     private static String sKey; //应用初始化时设置的默认密钥
@@ -232,7 +232,6 @@ public class AESUtil {
     /**
      * AES-CBC加密，Base64编码(使用默认密钥和默认向量)
      */
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public static String encryptCBC(String data) {
         try {
             if (data != null) {
@@ -248,20 +247,14 @@ public class AESUtil {
     /**
      * AES-CBC加密 (aesIv可以使用16字节长度)
      */
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public static byte[] encryptCBC(byte[] data, byte[] keyBytes, byte[] aesIv) throws Exception {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
-            IvParameterSpec parameterSpec = new IvParameterSpec(aesIv);
-            return encrypt(data, keyBytes, parameterSpec, AES_ALGORITHM_CBC);
-        } else {
-            throw new RuntimeException("Android API 小于19，无法使用AES-CBC方式加解密算法");
-        }
+        IvParameterSpec parameterSpec = new IvParameterSpec(aesIv);
+        return encrypt(data, keyBytes, parameterSpec, AES_ALGORITHM_CBC);
     }
 
     /**
      * AES-CBC解密，Base64编码(使用默认密钥和默认向量)
      */
-    @TargetApi(Build.VERSION_CODES.KITKAT)
     public static String decryptCBC(String data) {
         try {
             if (data != null) {
@@ -277,13 +270,8 @@ public class AESUtil {
     /**
      * AES-CBC解密 (aesIv可以使用16字节长度)
      */
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public static byte[] decryptCBC(byte[] data, byte[] keyBytes, byte[] aesIv) throws Exception {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
-            IvParameterSpec parameterSpec = new IvParameterSpec(aesIv);
-            return decrypt(data, keyBytes, parameterSpec, AES_ALGORITHM_CBC);
-        } else {
-            throw new RuntimeException("Android API 小于19，无法使用AES-CBC方式加解密算法");
-        }
+        IvParameterSpec parameterSpec = new IvParameterSpec(aesIv);
+        return decrypt(data, keyBytes, parameterSpec, AES_ALGORITHM_CBC);
     }
 }

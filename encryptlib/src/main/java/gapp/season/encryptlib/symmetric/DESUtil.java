@@ -2,6 +2,8 @@ package gapp.season.encryptlib.symmetric;
 
 import android.util.Base64;
 
+import java.security.spec.AlgorithmParameterSpec;
+
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -67,11 +69,11 @@ public class DESUtil {
      * @return 加密后的数据
      */
     public static byte[] encrypt(byte[] data, byte[] key, byte[] iv) throws Exception {
-        Cipher encrypt = Cipher.getInstance(DES_ALGORITHM_CBC);
+        Cipher cipher = Cipher.getInstance(DES_ALGORITHM_CBC);
         SecretKeySpec keySpec = new SecretKeySpec(key, KEY_GENERATOR_DES);
         IvParameterSpec ivParam = new IvParameterSpec(iv);
-        encrypt.init(Cipher.ENCRYPT_MODE, keySpec, ivParam);
-        return encrypt.doFinal(data);
+        cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivParam);
+        return cipher.doFinal(data);
     }
 
     /**
@@ -83,10 +85,24 @@ public class DESUtil {
      * @return 解密后的数据
      */
     public static byte[] decrypt(byte[] data, byte[] key, byte[] iv) throws Exception {
-        Cipher encrypt = Cipher.getInstance(DES_ALGORITHM_CBC);
+        Cipher cipher = Cipher.getInstance(DES_ALGORITHM_CBC);
         SecretKeySpec keySpec = new SecretKeySpec(key, KEY_GENERATOR_DES);
         IvParameterSpec ivParam = new IvParameterSpec(iv);
-        encrypt.init(Cipher.DECRYPT_MODE, keySpec, ivParam);
-        return encrypt.doFinal(data);
+        cipher.init(Cipher.DECRYPT_MODE, keySpec, ivParam);
+        return cipher.doFinal(data);
+    }
+
+    public static byte[] encrypt(byte[] data, byte[] key, AlgorithmParameterSpec params, String algorithm) throws Exception {
+        Cipher cipher = Cipher.getInstance(algorithm);
+        SecretKeySpec keySpec = new SecretKeySpec(key, KEY_GENERATOR_DES);
+        cipher.init(Cipher.ENCRYPT_MODE, keySpec, params);
+        return cipher.doFinal(data);
+    }
+
+    public static byte[] decrypt(byte[] data, byte[] key, AlgorithmParameterSpec params, String algorithm) throws Exception {
+        Cipher cipher = Cipher.getInstance(algorithm);
+        SecretKeySpec keySpec = new SecretKeySpec(key, KEY_GENERATOR_DES);
+        cipher.init(Cipher.DECRYPT_MODE, keySpec, params);
+        return cipher.doFinal(data);
     }
 }
