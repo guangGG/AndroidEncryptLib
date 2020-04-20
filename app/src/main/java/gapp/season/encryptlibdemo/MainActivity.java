@@ -61,9 +61,12 @@ public class MainActivity extends AppCompatActivity {
             int hexInt = ByteUtil.bytesToInt(HexUtil.decodeHexStr(" 78 57B 0d4 "));
             byte[] keyBytes = new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
             byte[] iv = new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
+            byte[] ivCBC = new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
             AESUtil.setDefaultKey(Base64Util.encodeToString(keyBytes).trim());
             AESUtil.setDefaultGCMIv(Base64Util.encodeToString(iv).trim());
+            AESUtil.setDefaultCBCIv(Base64Util.encodeToString(ivCBC).trim());
             String aesData = AESUtil.encryptGCM(str2);
+            String aesCBCData = AESUtil.encryptCBC(str2);
             String desKey = SecretKeyGenerator.generateKey(0, DESUtil.KEY_GENERATOR_DES);
             String desedeKey = SecretKeyGenerator.generateKey(0, DESedeUtil.KEY_GENERATOR_DESEDE);
             String desIv = SecretKeyGenerator.generateKey(64, DESUtil.KEY_GENERATOR_DES);
@@ -107,11 +110,13 @@ public class MainActivity extends AppCompatActivity {
                     + HexUtil.toHexStr(XorUtil.xor(HexUtil.decodeHexStr(str1), (byte) 0x68)) + "\n"
                     + HexUtil.toHexStr(XorUtil.xorByteArray(HexUtil.decodeHexStr(str1), HexUtil.decodeHexStr(str2))) + "\n"
                     + XorUtil.xorHexStr(str1, XorUtil.xorHexStr(str1, str2)) + "\n"
-                    + aesData + "\n"
+                    + "aesGCMData: " + aesData + "\n"
                     + AESUtil.decryptGCM(aesData) + "\n"
-                    + desData + "\n"
+                    + "aesCBCData: " + aesCBCData + "\n"
+                    + AESUtil.decryptCBC(aesCBCData) + "\n"
+                    + "desData: " + desData + "\n"
                     + DESUtil.decrypt(desData) + "\n"
-                    + desedeData + "\n"
+                    + "desedeData: " + desedeData + "\n"
                     + DESedeUtil.decrypt(desedeData) + "\n"
                     + "【" + rsaData1 + "】\n"
                     + "【" + rsaData2 + "】\n"

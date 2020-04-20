@@ -15,21 +15,25 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
  * AES加密算法
- * (使用128位长度的密钥，api-21及以上推荐使用GCM方式加密)
+ * (使用128位长度的密钥，api-21及以上推荐使用CBC或GCM方式加密)
  */
 public class AESUtil {
     public static final String KEY_GENERATOR_AES = "AES";
     //API1+   模式：CBC/CFB/CTR/CTS/ECB/OFB   Padding：ISO10126Padding/NoPadding/PKCS5Padding
     public static final String AES_ALGORITHM_ECB = "AES/ECB/PKCS5Padding"; //ECB-PKCS5是比较常用的模式，对低版本兼容性较好
-    //API10+   模式：GCM   Padding：NoPadding
-    public static final String AES_ALGORITHM_GCM = "AES/GCM/NoPadding"; //GCM模式安全性相对较高
+    //API:VERSION_CODES.L+ (最低支持到5.0)  模式：GCM   Padding：NoPadding
+    public static final String AES_ALGORITHM_GCM = "AES/GCM/NoPadding"; //GCM可以提供对消息的加密和完整性校验
+    //API:VERSION_CODES.L+ (最低支持到5.0)  模式：CBC   Padding：PKCS5Padding
+    public static final String AES_ALGORITHM_CBC = "AES/CBC/PKCS5Padding"; //密码分组链接模式 Cipher Block Chaining
 
     private static String sKey; //应用初始化时设置的默认密钥
     private static String sGcmIv; //应用初始化时设置的默认GCM向量
+    private static String sCbcIv; //应用初始化时设置的默认CBC向量
 
     /**
      * 应用初始化时可以设置一个默认密钥
@@ -50,6 +54,15 @@ public class AESUtil {
     }
 
     /**
+     * 应用初始化时可以设置一个默认CBC向量
+     *
+     * @param iv CBC向量经过base64编码的字符串 (向量需使用16个字节长度)
+     */
+    public static void setDefaultCBCIv(String iv) {
+        sCbcIv = iv;
+    }
+
+    /**
      * 获取默认密钥的16位字节数组
      */
     public static byte[] getKeyBytes() {
@@ -57,10 +70,27 @@ public class AESUtil {
     }
 
     /**
-     * 获取默认GCM向量
+     * 获取默认GCM向量 (已废弃，请使用getGCMIvBytes)
+     *
+     * @deprecated Use {@link #getGCMIvBytes()} instead.
      */
+    @Deprecated
     public static byte[] getIvBytes() {
         return Base64.decode(sGcmIv, Base64.DEFAULT);
+    }
+
+    /**
+     * 获取默认GCM向量
+     */
+    public static byte[] getGCMIvBytes() {
+        return Base64.decode(sGcmIv, Base64.DEFAULT);
+    }
+
+    /**
+     * 获取默认CBC向量
+     */
+    public static byte[] getCBCIvBytes() {
+        return Base64.decode(sCbcIv, Base64.DEFAULT);
     }
 
     /**
@@ -144,7 +174,7 @@ public class AESUtil {
     public static String encryptGCM(String data) {
         try {
             if (data != null) {
-                byte[] bs = encryptGCM(data.getBytes(), getKeyBytes(), getIvBytes());
+                byte[] bs = encryptGCM(data.getBytes(), getKeyBytes(), getGCMIvBytes());
                 return Base64.encodeToString(bs, Base64.DEFAULT).trim();
             }
         } catch (Exception e) {
@@ -176,7 +206,7 @@ public class AESUtil {
         try {
             if (data != null) {
                 byte[] bs = Base64.decode(data, Base64.DEFAULT);
-                return new String(decryptGCM(bs, getKeyBytes(), getIvBytes()));
+                return new String(decryptGCM(bs, getKeyBytes(), getGCMIvBytes()));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -196,6 +226,64 @@ public class AESUtil {
             return decrypt(data, keyBytes, parameterSpec, AES_ALGORITHM_GCM);
         } else {
             throw new RuntimeException("Android API 小于19，无法使用AES-GCM方式加解密算法");
+        }
+    }
+
+    /**
+     * AES-CBC加密，Base64编码(使用默认密钥和默认向量)
+     */
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    public static String encryptCBC(String data) {
+        try {
+            if (data != null) {
+                byte[] bs = encryptCBC(data.getBytes(), getKeyBytes(), getCBCIvBytes());
+                return Base64.encodeToString(bs, Base64.DEFAULT).trim();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * AES-CBC加密 (aesIv可以使用16字节长度)
+     */
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    public static byte[] encryptCBC(byte[] data, byte[] keyBytes, byte[] aesIv) throws Exception {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
+            IvParameterSpec parameterSpec = new IvParameterSpec(aesIv);
+            return encrypt(data, keyBytes, parameterSpec, AES_ALGORITHM_CBC);
+        } else {
+            throw new RuntimeException("Android API 小于19，无法使用AES-CBC方式加解密算法");
+        }
+    }
+
+    /**
+     * AES-CBC解密，Base64编码(使用默认密钥和默认向量)
+     */
+    @TargetApi(Build.VERSION_CODES.KITKAT)
+    public static String decryptCBC(String data) {
+        try {
+            if (data != null) {
+                byte[] bs = Base64.decode(data, Base64.DEFAULT);
+                return new String(decryptCBC(bs, getKeyBytes(), getCBCIvBytes()));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * AES-CBC解密 (aesIv可以使用16字节长度)
+     */
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    public static byte[] decryptCBC(byte[] data, byte[] keyBytes, byte[] aesIv) throws Exception {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
+            IvParameterSpec parameterSpec = new IvParameterSpec(aesIv);
+            return decrypt(data, keyBytes, parameterSpec, AES_ALGORITHM_CBC);
+        } else {
+            throw new RuntimeException("Android API 小于19，无法使用AES-CBC方式加解密算法");
         }
     }
 }
